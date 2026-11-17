@@ -1,17 +1,30 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { Point } from "../../../shared/types";
-import { nearbyArtwork } from "../lib/proximity";
+import { nearbyPart } from "../lib/proximity";
+export type ActiveRef = { artworkId: string; partId: string };
+const HOLD_MS = 8000;
 export function useCatalog() {
-  const [active, setActive] = useState<string | null>("a1");
-  const [nearby, setNearby] = useState<string | null>(null);
+  const [active, setActive] = useState<ActiveRef | null>({
+    artworkId: "a1",
+    partId: "a1",
+  });
+  const [nearby, setNearby] = useState<ActiveRef | null>(null);
+  const holdUntil = useRef(0);
   return {
-    active,
-    nearby,
-    select: setActive,
-    observe: (p: Point) => {
-      const id = nearbyArtwork(p);
-      setNearby(id);
-      if (id) setActive(id);
+    active: active?.artworkId ?? null,
+    activePart: active?.partId ?? null,
+    nearby: nearby?.artworkId ?? null,
+    nearbyPart: nearby?.partId ?? null,
+    select: (artworkId: string, partId?: string | null) => {
+      holdUntil.current = Date.now() + HOLD_MS;
+      setActive({ artworkId, partId: partId || artworkId });
+    },
+    observe: (p: Point, engaged: boolean) => {
+      const near = nearbyPart(p);
+      setNearby(near ? { artworkId: near.artworkId, partId: near.partId } : null);
+      if (!near) return;
+      if (engaged || Date.now() < holdUntil.current) return;
+      setActive({ artworkId: near.artworkId, partId: near.partId });
     },
   };
 }

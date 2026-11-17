@@ -1,13 +1,17 @@
-import { artworks } from "../../../shared/catalog";
+import { artworks, partsOf } from "../../../shared/catalog";
 import type { Point } from "../../../shared/types";
-export function nearbyArtwork(p: Point): string | null {
-  let best: string | null = null;
-  let d = 3.1;
+export type NearbyRef = {
+  artworkId: string;
+  partId: string;
+  distance: number;
+};
+export function nearbyPart(p: Point): NearbyRef | null {
+  let best: NearbyRef | null = null;
   for (const a of artworks) {
-    const next = Math.hypot(a.position.x - p.x, a.position.z - p.z);
-    if (next < d) {
-      best = a.id;
-      d = next;
+    for (const part of partsOf(a)) {
+      const d = Math.hypot(part.position.x - p.x, part.position.z - p.z);
+      if (d < 3.1 && (!best || d < best.distance))
+        best = { artworkId: a.id, partId: part.id, distance: d };
     }
   }
   return best;

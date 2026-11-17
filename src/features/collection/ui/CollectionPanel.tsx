@@ -1,7 +1,7 @@
 import { Heart, Download, ArrowUpRight } from "lucide-react";
 import type { GalleryDocument } from "../../../shared/types";
-import { artworkById } from "../../../shared/catalog";
-import { recapStats, createRecap } from "../lib/recap";
+import { artworkById, isComposite } from "../../../shared/catalog";
+import { recapStats, createRecap, partProgress } from "../lib/recap";
 import { downloadRecap } from "../lib/download";
 export function CollectionPanel({
   document,
@@ -40,6 +40,9 @@ export function CollectionPanel({
         document.favorites.map((id) => {
           const a = artworkById(id);
           if (!a) return null;
+          const progress = isComposite(a)
+            ? partProgress(a, document.visits.find((v) => v.id === id))
+            : null;
           return (
             <article className="saved-card" key={id}>
               <button className="saved-title" onClick={() => onSelect(id)}>
@@ -48,6 +51,11 @@ export function CollectionPanel({
               </button>
               <small>
                 {a.artist} · {a.year}
+                {progress && (
+                  <span className="part-progress">
+                    已看 {progress.seen.length}/{progress.total} 个部分
+                  </span>
+                )}
               </small>
               <textarea
                 aria-label={"感想-" + a.title}

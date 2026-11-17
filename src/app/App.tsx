@@ -15,7 +15,7 @@ import { ArtworkList, ArtworkDetail } from "../features/catalog";
 import { TourPanel } from "../features/tours";
 import { AudioPlayer } from "../features/narration";
 import { CollectionPanel } from "../features/collection";
-import { artworks, artworkById } from "../shared/catalog";
+import { artworks, artworkById, partById } from "../shared/catalog";
 import { useGallery } from "./useGallery";
 export default function App() {
   const g = useGallery();
@@ -23,7 +23,11 @@ export default function App() {
   const [mapOpen, setMapOpen] = useState(false);
   const [help, setHelp] = useState(false);
   const [side, setSide] = useState("works");
-  const a = artworkById(g.catalog.active);
+  const nearArtwork = artworkById(g.catalog.nearby);
+  const nearPart =
+    nearArtwork && g.catalog.nearbyPart
+      ? partById(nearArtwork, g.catalog.nearbyPart)
+      : undefined;
   return (
     <div className="app">
       <header>
@@ -82,9 +86,9 @@ export default function App() {
               一场不受边界限制的艺术漫游。
             </p>
             <div className="exhibition-meta">
-              <span>6 件作品</span>
-              <span>6 位艺术家</span>
-              <span>约 12 分钟</span>
+              <span>7 件作品</span>
+              <span>7 位艺术家</span>
+              <span>约 15 分钟</span>
             </div>
           </div>
           <div className="sidebar-tabs">
@@ -92,7 +96,7 @@ export default function App() {
               className={side === "works" ? "active" : ""}
               onClick={() => setSide("works")}
             >
-              展出作品 <small>06</small>
+              展出作品 <small>07</small>
             </button>
             <button
               className={side === "map" ? "active" : ""}
@@ -164,7 +168,11 @@ export default function App() {
             <div className="center-cross">+</div>
             <div className="scene-location">
               <MapPin size={15} />
-              {g.catalog.nearby ? a?.title : "万物之间 · 主展厅"}
+              {g.catalog.nearby
+                ? nearPart && nearArtwork && nearPart.id !== nearArtwork.id
+                  ? `${nearArtwork.title} · ${nearPart.label}`
+                  : nearArtwork?.title
+                : "万物之间 · 主展厅"}
               <small>
                 {g.catalog.nearby
                   ? "靠近作品 · 可收听讲解"
@@ -262,17 +270,19 @@ export default function App() {
           ) : (
             <ArtworkDetail
               id={g.catalog.active}
+              partId={g.catalog.activePart}
               saved={g.collection.document.favorites.includes(
                 g.catalog.active || "",
               )}
               onFavorite={() => {
                 if (g.catalog.active) g.collection.toggle(g.catalog.active);
               }}
-              onListen={() => {
-                if (g.catalog.active) g.narration.play(g.catalog.active);
+              onListen={(partId) => {
+                if (g.catalog.active)
+                  g.narration.play(g.catalog.active, partId ?? null);
               }}
-              onGo={() => {
-                if (g.catalog.active) g.go(g.catalog.active);
+              onGo={(partId) => {
+                if (g.catalog.active) g.go(g.catalog.active, partId);
               }}
             />
           )}
@@ -296,9 +306,11 @@ export default function App() {
         state={g.narration.state}
         caption={g.narration.caption}
         supported={g.narration.supported}
+        bookmark={g.narration.bookmark}
         onToggle={g.narration.toggle}
         onSeek={g.narration.seek}
         onRate={g.narration.rate}
+        onResumeOverall={g.narration.resumeOverall}
       />
       {(mapOpen || help) && (
         <div

@@ -63,22 +63,36 @@ export function TourPanel({
           </div>
         </div>
       ) : (
-        routes.map((r, i) => (
-          <button
-            className={"route-card route-" + i}
-            key={r.id}
-            onClick={() => onStart(r.id)}
-          >
-            <span>
-              JOURNEY 0{i + 1} <span>约 {i ? 3 : 2} 分钟 · 3 件作品</span>
-            </span>
-            <h3>
-              {r.name}
-              <ArrowUpRightIcon />
-            </h3>
-            <p>{r.subtitle}</p>
-          </button>
-        ))
+        routes.map((r, i) => {
+          const minutes = Math.max(
+            1,
+            Math.round(
+              r.stops.reduce(
+                (n, id) => n + (artworkById(id)?.duration || 0),
+                0,
+              ) / 60,
+            ) + r.stops.length,
+          );
+          return (
+            <button
+              className={"route-card route-" + i}
+              key={r.id}
+              onClick={() => onStart(r.id)}
+            >
+              <span>
+                JOURNEY 0{i + 1}{" "}
+                <span>
+                  约 {minutes} 分钟 · {r.stops.length} 件作品
+                </span>
+              </span>
+              <h3>
+                {r.name}
+                <ArrowUpRightIcon />
+              </h3>
+              <p>{r.subtitle}</p>
+            </button>
+          );
+        })
       )}
     </section>
   );

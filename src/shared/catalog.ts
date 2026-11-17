@@ -1,4 +1,4 @@
-import type { Artwork, Route } from "./types";
+import type { Artwork, ArtworkPart, Route } from "./types";
 export const artworks: Artwork[] = [
   {
     id: "a1",
@@ -114,6 +114,87 @@ export const artworks: Artwork[] = [
     ],
     duration: 48,
   },
+  {
+    id: "a7",
+    title: "岛屿的集会",
+    en: "GATHERING OF ISLANDS",
+    artist: "温屿",
+    year: "2026",
+    medium: "多幅图像与中央雕塑 / 空间装置",
+    color: "#c2a878",
+    position: { x: 0, z: -0.3 },
+    facing: 0,
+    overview: { position: { x: 2.2, z: 3.6 }, yaw: 0.51 },
+    description:
+      "三幅图像散落在展厅的不同方向，中央雕塑是它们共同的引力中心。图像记录同一片海域的初涨、满潮与回响，雕塑则是潮水凝固的形状。只有走过所有方向，这件作品才真正完成。",
+    transcript: [
+      "这件作品不止一个方向。请先站在中央，让雕塑与四周的图像同时进入视野。",
+      "三幅图像记录同一片海域的不同时刻：初涨、满潮与回响。",
+      "中央的雕塑是潮水凝固的形状，它把所有方向连接在一起。",
+      "现在，你可以走向任何一幅图像，听听它自己的段落。",
+    ],
+    duration: 50,
+    parts: [
+      {
+        id: "a7-north-1",
+        label: "北岸 · 初涨",
+        kind: "image",
+        position: { x: -3.4, z: -7.4 },
+        facing: 0,
+        texture: "a7-north-1",
+        description: "第一缕潮水越过沙洲，岛屿开始失去边界。",
+        transcript: [
+          "潮水刚刚到来，画面里的线条还保持着犹豫。",
+          "浅浅的光，是水面第一次覆盖沙洲时的颜色。",
+        ],
+        duration: 24,
+      },
+      {
+        id: "a7-north-2",
+        label: "北岸 · 满潮",
+        kind: "image",
+        position: { x: 3.4, z: -7.4 },
+        facing: 0,
+        texture: "a7-north-2",
+        description: "海面升到最高处，世界只剩下水的圆心。",
+        transcript: [
+          "满潮时刻，岛屿缩成一个个同心的圆。",
+          "站在这里，你几乎能听见水面呼吸的声音。",
+        ],
+        duration: 24,
+      },
+      {
+        id: "a7-west",
+        label: "西岸 · 回响",
+        kind: "image",
+        position: { x: -5.4, z: -0.7 },
+        facing: Math.PI / 2,
+        texture: "a7-west",
+        description: "潮水退去之后，岛屿重新浮现，却不再是原来的形状。",
+        transcript: [
+          "退潮留下的痕迹，像一封写给陆地的信。",
+          "每一个光点，都是岛屿重新出现的瞬间。",
+        ],
+        duration: 24,
+      },
+      {
+        id: "a7-sculpture",
+        label: "潮核 · 中央雕塑",
+        kind: "sculpture",
+        position: { x: 0, z: -0.3 },
+        facing: 0,
+        texture: "a7-sculpture",
+        description:
+          "雕塑没有正面与背面——从任何方向绕行，你都在这件作品之中。",
+        transcript: [
+          "请绕着雕塑走一圈，它的每一个方向都不相同。",
+          "金属的曲面收藏着光，也收藏着你走过的路径。",
+          "即使走到它的背面，你仍然没有离开这件作品。",
+        ],
+        duration: 30,
+      },
+    ],
+  },
 ];
 export const routes: Route[] = [
   {
@@ -128,6 +209,72 @@ export const routes: Route[] = [
     subtitle: "穿行于光、建筑与时间的边界",
     stops: ["a3", "a4", "a6"],
   },
+  {
+    id: "water",
+    name: "水的形状",
+    subtitle: "潮汐、岛屿与凝固的时间，从片段走向完整",
+    stops: ["a2", "a7", "a6"],
+  },
 ];
-export const artworkById = (id: string | null) =>
+export const artworkById = (id: string | null | undefined) =>
   artworks.find((a) => a.id === id);
+export const isComposite = (a: Artwork) => !!a.parts && a.parts.length > 0;
+export function partsOf(a: Artwork): ArtworkPart[] {
+  return (
+    a.parts ?? [
+      {
+        id: a.id,
+        label: a.title,
+        kind: "image" as const,
+        position: a.position,
+        facing: a.facing,
+        texture: a.id,
+        description: a.description,
+        transcript: a.transcript,
+        duration: a.duration,
+      },
+    ]
+  );
+}
+export const artworkByPartId = (partId: string | null | undefined) =>
+  artworks.find((a) => partsOf(a).some((p) => p.id === partId));
+export const partById = (a: Artwork, partId: string | null | undefined) =>
+  partsOf(a).find((p) => p.id === partId);
+export function overviewOf(a: Artwork): {
+  position: { x: number; z: number };
+  yaw: number;
+} {
+  return (
+    a.overview ?? {
+      position: {
+        x: a.position.x + Math.sin(a.facing) * 2,
+        z: a.position.z + Math.cos(a.facing) * 2,
+      },
+      yaw: a.facing,
+    }
+  );
+}
+export type Segment = {
+  key: string;
+  label: string;
+  transcript: string[];
+  duration: number;
+};
+export function segmentOf(
+  artworkId: string | null,
+  partId: string | null,
+): Segment | null {
+  const a = artworkById(artworkId);
+  if (!a) return null;
+  if (!partId || partId === a.id)
+    return {
+      key: a.id,
+      label: "整体讲解",
+      transcript: a.transcript,
+      duration: a.duration,
+    };
+  const p = partById(a, partId);
+  return p
+    ? { key: p.id, label: p.label, transcript: p.transcript, duration: p.duration }
+    : null;
+}

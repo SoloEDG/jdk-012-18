@@ -9,7 +9,7 @@ export function Viewport({
 }: {
   position: React.RefObject<Point>;
   yaw: React.RefObject<number>;
-  onSelect: (id: string) => void;
+  onSelect: (id: string, partId?: string) => void;
 }) {
   const root = useRef<HTMLDivElement>(null);
   const select = useRef(onSelect);
@@ -27,7 +27,7 @@ export function Viewport({
     renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     el.appendChild(renderer.domElement);
-    const { scene, frames, sculpture } = buildScene();
+    const { scene, pickables, sculpture } = buildScene();
     const camera = new THREE.PerspectiveCamera(65, 1, 0.1, 80);
     const resize = () => {
       renderer.setSize(el.clientWidth, el.clientHeight);
@@ -67,8 +67,9 @@ export function Viewport({
           ),
           camera,
         );
-        const hit = ray.intersectObjects(frames)[0];
-        if (hit) select.current(hit.object.userData.artworkId);
+        const hit = ray.intersectObjects(pickables)[0];
+        if (hit)
+          select.current(hit.object.userData.artworkId, hit.object.userData.partId);
       }
     };
     renderer.domElement.addEventListener("pointerdown", down);
@@ -77,7 +78,7 @@ export function Viewport({
     const tick = (now: number) => {
       camera.position.set(position.current.x, 1.7, position.current.z);
       camera.rotation.set(-0.03, yaw.current, 0);
-      sculpture.rotation.y = now * 0.00015;
+      if (sculpture) sculpture.rotation.y = now * 0.00015;
       renderer.render(scene, camera);
       frame = requestAnimationFrame(tick);
     };

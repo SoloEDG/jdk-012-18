@@ -575,6 +575,9 @@ kbd {
 .art-preview.art-a6 {
   filter: sepia(0.8);
 }
+.art-preview.art-a7 {
+  filter: hue-rotate(160deg) saturate(1.2);
+}
 .art-preview span {
   position: absolute;
   z-index: 1;
@@ -625,6 +628,81 @@ kbd {
   width: 100%;
   justify-content: center;
   margin: 25px 0 11px;
+}
+.detail-actions .primary.secondary {
+  margin: 0 0 11px;
+  background: #4a5340;
+  color: #d8cfb2;
+}
+.part-list {
+  margin: 18px 0 4px;
+  border-top: 1px solid #3c4732;
+  padding-top: 14px;
+}
+.part-list-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: #96a381;
+  margin-bottom: 10px;
+}
+.part-row {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 8px;
+  text-align: left;
+  border-radius: 2px;
+  color: #aab39b;
+}
+.part-row.active {
+  background: #2c3329;
+  color: #d8c492;
+}
+.part-row > span {
+  flex: 1;
+}
+.part-row strong {
+  display: block;
+  font-size: 11px;
+  font-weight: 400;
+}
+.part-row small {
+  font-size: 8px;
+  color: #7f8978;
+}
+.part-description {
+  font-size: 10px;
+  line-height: 2;
+  color: #a7b096;
+  margin: 10px 4px 4px;
+}
+.part-badge {
+  font-style: normal;
+  font-size: 8px;
+  color: #c0ab7c;
+  border: 1px solid #57503a;
+  border-radius: 2px;
+  padding: 1px 5px;
+  margin-left: 7px;
+}
+.resume-overall {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 9px;
+  color: #d3c08e;
+  border: 1px solid #5d624b;
+  padding: 7px 10px;
+  white-space: nowrap;
+}
+.part-progress {
+  display: block;
+  margin-top: 5px;
+  color: #b0a983;
 }
 .primary {
   display: flex;

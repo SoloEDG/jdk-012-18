@@ -4,21 +4,33 @@ import { useCatalog } from "../features/catalog";
 import { useNarration } from "../features/narration";
 import { useTour } from "../features/tours";
 import { useCollection } from "../features/collection";
-import { artworkById } from "../shared/catalog";
+import { artworkById, overviewOf, partById } from "../shared/catalog";
 export function useGallery() {
   const catalog = useCatalog();
   const tour = useTour();
   const collection = useCollection();
-  const walker = useWalker(catalog.observe);
-  const narration = useNarration(() => {
-    if (tour.state.phase === "listening") tour.next();
+  const engaged = useRef(false);
+  const walker = useWalker((p) => catalog.observe(p, engaged.current));
+  const narration = useNarration((ended) => {
+    if (
+      tour.state.phase === "listening" &&
+      (!ended.partId || ended.partId === ended.artworkId)
+    )
+      tour.next();
   });
-  const go = (id: string) => {
+  engaged.current = narration.state.playing;
+  const go = (id: string, partId?: string | null) => {
     const a = artworkById(id);
-    if (a) {
-      catalog.select(id);
-      walker.go(viewingPoint(a.position, a.facing));
-      walker.yaw.current = a.facing;
+    if (!a) return;
+    const part = partId ? partById(a, partId) : undefined;
+    catalog.select(id, part?.id);
+    if (part && part.id !== a.id) {
+      walker.go(viewingPoint(part.position, part.facing));
+      walker.yaw.current = part.facing;
+    } else {
+      const ov = overviewOf(a);
+      walker.go(ov.position);
+      walker.yaw.current = ov.yaw;
     }
   };
   useEffect(() => {
@@ -27,17 +39,26 @@ export function useGallery() {
   useEffect(() => {
     if (tour.state.phase !== "walking" || !tour.target) return;
     const a = artworkById(tour.target)!;
-    if (distance(walker.position, viewingPoint(a.position, a.facing)) < 0.15) {
+    if (distance(walker.position, overviewOf(a).position) < 0.15) {
       tour.arrive();
       narration.play(a.id);
     }
   }, [walker.position, tour.state.phase, tour.target]);
-  const current = useRef({ nearby: catalog.nearby, record: collection.record });
-  current.current = { nearby: catalog.nearby, record: collection.record };
+  const current = useRef({
+    nearby: null as { artworkId: string; partId: string } | null,
+    record: collection.record,
+  });
+  current.current = {
+    nearby:
+      catalog.nearby && catalog.nearbyPart
+        ? { artworkId: catalog.nearby, partId: catalog.nearbyPart }
+        : null,
+    record: collection.record,
+  };
   useEffect(() => {
     const t = setInterval(() => {
-      if (current.current.nearby)
-        current.current.record(current.current.nearby, 1);
+      const near = current.current.nearby;
+      if (near) current.current.record(near.artworkId, 1, near.partId);
     }, 1000);
     return () => clearInterval(t);
   }, []);

@@ -1,6 +1,6 @@
 import * as THREE from "three";
-import { artworks } from "../../../shared/catalog";
-import { artTexture } from "./artTexture";
+import { artworks, partsOf } from "../../../shared/catalog";
+import { artTexture, fallbackTexture } from "./artTexture";
 export function buildScene() {
   const scene = new THREE.Scene();
   scene.background = new THREE.Color("#d7d5ce");
@@ -39,44 +39,61 @@ export function buildScene() {
     box(10, 0.16, 0.2, 0, 5.1, z, "#b7b4aa");
     box(7, 0.03, 0.12, 0, 5, z, "#fff6d9");
   }
-  box(1.8, 0.7, 1.5, 0, 0.35, -0.3, "#d3cfc4");
-  const sculpture = new THREE.Mesh(
-    new THREE.TorusKnotGeometry(0.65, 0.14, 100, 16),
-    new THREE.MeshStandardMaterial({
-      color: "#81765f",
-      metalness: 0.72,
-      roughness: 0.25,
-    }),
-  );
-  sculpture.position.set(0, 1.7, -0.3);
-  scene.add(sculpture);
-  const frames: THREE.Mesh[] = [];
+  const pickables: THREE.Mesh[] = [];
+  let sculpture: THREE.Mesh | null = null;
   for (const a of artworks) {
-    const group = new THREE.Group();
-    group.position.set(a.position.x, 2.45, a.position.z);
-    group.rotation.y = a.facing;
-    const frame = new THREE.Mesh(
-      new THREE.BoxGeometry(2.3, 2.9, 0.12),
-      new THREE.MeshStandardMaterial({ color: "#423e35" }),
-    );
-    group.add(frame);
-    const image = new THREE.Mesh(
-      new THREE.PlaneGeometry(2.13, 2.73),
-      new THREE.MeshBasicMaterial({ map: artTexture(a) }),
-    );
-    image.position.z = 0.07;
-    image.userData.artworkId = a.id;
-    group.add(image);
-    frames.push(image);
-    const plaque = new THREE.Mesh(
-      new THREE.PlaneGeometry(0.6, 0.13),
-      new THREE.MeshBasicMaterial({ color: "#f2eee3" }),
-    );
-    plaque.position.set(0.7, -1.66, 0.08);
-    group.add(plaque);
-    scene.add(group);
+    for (const part of partsOf(a)) {
+      if (part.kind === "sculpture") {
+        box(1.8, 0.7, 1.5, part.position.x, 0.35, part.position.z, "#d3cfc4");
+        const mesh = new THREE.Mesh(
+          new THREE.TorusKnotGeometry(0.65, 0.14, 100, 16),
+          new THREE.MeshStandardMaterial({
+            color: "#a88f63",
+            metalness: 0.72,
+            roughness: 0.25,
+          }),
+        );
+        mesh.position.set(part.position.x, 1.7, part.position.z);
+        mesh.userData.artworkId = a.id;
+        mesh.userData.partId = part.id;
+        scene.add(mesh);
+        pickables.push(mesh);
+        sculpture = mesh;
+        continue;
+      }
+      const group = new THREE.Group();
+      group.position.set(part.position.x, 2.45, part.position.z);
+      group.rotation.y = part.facing;
+      const frame = new THREE.Mesh(
+        new THREE.BoxGeometry(2.3, 2.9, 0.12),
+        new THREE.MeshStandardMaterial({ color: "#423e35" }),
+      );
+      group.add(frame);
+      let texture: THREE.Texture;
+      try {
+        texture = artTexture(a, part);
+      } catch {
+        texture = fallbackTexture(a);
+      }
+      const image = new THREE.Mesh(
+        new THREE.PlaneGeometry(2.13, 2.73),
+        new THREE.MeshBasicMaterial({ map: texture }),
+      );
+      image.position.z = 0.07;
+      image.userData.artworkId = a.id;
+      image.userData.partId = part.id;
+      group.add(image);
+      pickables.push(image);
+      const plaque = new THREE.Mesh(
+        new THREE.PlaneGeometry(0.6, 0.13),
+        new THREE.MeshBasicMaterial({ color: "#f2eee3" }),
+      );
+      plaque.position.set(0.7, -1.66, 0.08);
+      group.add(plaque);
+      scene.add(group);
+    }
   }
-  return { scene, frames, sculpture };
+  return { scene, pickables, sculpture };
 }
 export function disposeScene(scene: THREE.Scene) {
   scene.traverse((o) => {

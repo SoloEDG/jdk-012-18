@@ -1,4 +1,4 @@
-import { artworks } from "../../../shared/catalog";
+import { artworks, isComposite, partsOf } from "../../../shared/catalog";
 import { ArrowUpRight } from "lucide-react";
 export function ArtworkList({
   active,
@@ -20,6 +20,9 @@ export function ArtworkList({
             <strong>{a.title}</strong>
             <small>
               {a.artist} · {a.year}
+              {isComposite(a) && (
+                <em className="part-badge">{partsOf(a).length} 个部分</em>
+              )}
             </small>
           </span>
           <ArrowUpRight size={16} />
